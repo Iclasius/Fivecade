@@ -1,0 +1,349 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="utf-8">
+<title>Degenatron / Penetrator</title>
+<style>
+  html, body {
+    margin: 0;
+    padding: 0;
+    width: 100%;
+    height: 100%;
+    background: transparent;
+    overflow: hidden;
+    font-family: "Courier New", monospace;
+  }
+  #app {
+    display: none;
+    position: fixed;
+    inset: 0;
+    /* Quasi-opaque : on ne doit voir que l'ecran de la borne, pas le
+       decor GTA derriere - une transparence visible cassait
+       l'immersion (on voyait le monde autour de l'ecran). */
+    background: rgba(0, 0, 0, 0.97);
+  }
+  #app.visible {
+    display: block;
+  }
+  /* Cadre "borne" reel (bezel.png) etire jusqu'aux bords de l'ecran -
+     demande explicite de l'utilisateur ("le cadre doit prendre la
+     bordure de l'ecran, quitte a etre un peu plus large") plutot que
+     de garder le ratio natif 4:3 de l'image avec des bandes noires.
+     La decoupe transparente est positionnee en % (pas en px) pour
+     rester calee sur le cadre quelle que soit la taille d'ecran :
+     native 106,112 -> 1348,956 dans une image de 1448x1086. */
+  #cabinet {
+    position: fixed;
+    inset: 0;
+    background: url('bezel.png') no-repeat center / 100% 100%;
+  }
+  /* Cadre dedie pour la borne Penetrator (DA differente, meme jeu) -
+     decoupe transparente a un autre endroit/ratio que bezel.png :
+     native 152,204 -> 968,1032 dans une image de 1122x1402. */
+  #cabinet.penetrator {
+    background-image: url('bezel-penetrator.png');
+  }
+  #screen-wrap {
+    position: absolute;
+    left: 7.32%;
+    top: 10.31%;
+    width: 85.77%;
+    height: 77.72%;
+    border-radius: 2.5%;
+    overflow: hidden;
+    background: #000;
+  }
+  #screen-wrap.penetrator {
+    left: 13.55%;
+    top: 14.55%;
+    width: 72.73%;
+    height: 59.06%;
+  }
+  #game-container {
+    width: 100%;
+    height: 100%;
+  }
+  #game-container canvas {
+    display: block;
+    width: 100% !important;
+    height: 100% !important;
+    /* Pas de "pixelated"/nearest-neighbor ici : le canvas (resolution
+     * interne fixe, voir GAME_WIDTH/GAME_HEIGHT) est mis a l'echelle
+     * (generalement vers le bas) dans la decoupe du cadre, qui varie
+     * selon la taille d'ecran - un rendu "pixelated" y rendait le texte
+     * illisible/deforme (ex: "GAME OVER"/"ENTREE" corrompus visuellement)
+     * et aurait aussi cranele les sprites (illustrations detaillees, pas
+     * du vrai pixel art 8-bit). Lissage navigateur par defaut a la place.
+     */
+  }
+  #hint {
+    position: absolute;
+    left: 0;
+    right: 0;
+    bottom: 6px;
+    text-align: center;
+    color: #f0d9ff;
+    font-size: 11px;
+    text-shadow: 0 0 4px #000;
+    pointer-events: none;
+    opacity: 0.85;
+    z-index: 2;
+  }
+  /* Journal d'erreurs visible directement a l'ecran - le F8 de FiveM
+     n'affiche pas la console JS de la page NUI, donc c'est le seul
+     moyen fiable de voir une erreur JS sans devtools externes. */
+  #debug-log {
+    display: none;
+    position: absolute;
+    left: 4px;
+    top: 4px;
+    right: 4px;
+    max-height: 120px;
+    margin: 0;
+    overflow-y: auto;
+    background: rgba(0, 0, 0, 0.8);
+    border: 1px solid #ff3a5e;
+    color: #ff9a9a;
+    font-size: 9px;
+    line-height: 1.3;
+    padding: 4px;
+    white-space: pre-wrap;
+    pointer-events: none;
+    z-index: 3;
+  }
+  #debug-log.visible {
+    display: block;
+  }
+  /* Saisie du nom pour le classement en fin de partie - libre plutot
+     que force au nom du personnage FiveM. */
+  #name-entry {
+    display: none;
+    position: absolute;
+    inset: 0;
+    align-items: center;
+    justify-content: center;
+    background: rgba(0, 0, 0, 0.75);
+    z-index: 4;
+  }
+  #name-entry.visible {
+    display: flex;
+  }
+  #name-entry-box {
+    background: #05070f;
+    border: 2px solid #3ad6ff;
+    border-radius: 8px;
+    padding: 24px 32px;
+    text-align: center;
+    font-family: "Courier New", monospace;
+  }
+  #name-entry-label {
+    color: #3ad6ff;
+    font-size: 13px;
+    letter-spacing: 0.05em;
+    margin-bottom: 12px;
+  }
+  #name-entry-input {
+    display: block;
+    width: 220px;
+    background: #10142a;
+    border: 2px solid #9be7ff;
+    border-radius: 4px;
+    color: #ffffff;
+    font-family: "Courier New", monospace;
+    font-size: 18px;
+    text-align: center;
+    padding: 6px 8px;
+    margin: 0 auto 10px;
+    text-transform: uppercase;
+    outline: none;
+  }
+  #name-entry-hint {
+    color: #9be7ff;
+    font-size: 10px;
+    opacity: 0.85;
+  }
+</style>
+</head>
+<body>
+  <div id="app">
+    <div id="cabinet">
+      <div id="screen-wrap">
+        <div id="game-container"></div>
+        <div id="hint">ECHAP pour quitter</div>
+        <pre id="debug-log"></pre>
+        <div id="name-entry">
+          <div id="name-entry-box">
+            <div id="name-entry-label">TON NOM POUR LE CLASSEMENT</div>
+            <input id="name-entry-input" maxlength="16" autocomplete="off" spellcheck="false" />
+            <div id="name-entry-hint">ENTREE pour valider</div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+<script src="phaser.min.js"></script>
+<script>
+(function () {
+  "use strict";
+
+  var RESOURCE_NAME = (typeof GetParentResourceName === "function")
+    ? GetParentResourceName()
+    : "fivecade_degenatron_penetrator";
+
+  function nuiPost(name, data) {
+    return fetch("https://" + RESOURCE_NAME + "/" + name, {
+      method: "POST",
+      headers: { "Content-Type": "application/json; charset=UTF-8" },
+      body: JSON.stringify(data || {})
+    }).catch(function () { /* contexte hors FiveM (previsualisation) */ });
+  }
+
+  var appEl = document.getElementById("app");
+  var debugLogEl = document.getElementById("debug-log");
+
+  function debugLog(text) {
+    debugLogEl.classList.add("visible");
+    debugLogEl.textContent += text + "\n";
+    debugLogEl.scrollTop = debugLogEl.scrollHeight;
+  }
+
+  window.addEventListener("error", function (e) {
+    debugLog("[erreur JS] " + e.message + " (" + e.filename + ":" + e.lineno + ")");
+  });
+
+  var currentPlayerName = "???";
+  var currentBorneType = "degenatron";
+
+  /* Auto-ouverture pour capture d'ecran/preview hors FiveM uniquement
+   * (?autoopen=1, optionnellement ?borneType=penetrator) - sans effet
+   * en jeu, l'URL NUI reelle n'a jamais ces parametres. */
+  if (/[?&]autoopen=1/.test(location.search)) {
+    window.addEventListener("load", function () {
+      currentPlayerName = "Preview";
+      var m = location.search.match(/[?&]borneType=([a-z]+)/);
+      currentBorneType = (m && m[1]) || "degenatron";
+      openApp();
+    });
+  }
+
+  function openApp() {
+    appEl.classList.add("visible");
+    /* Cadre/decoupe dedies a la borne Penetrator (meme jeu, DA
+     * differente) - bascule les deux en meme temps via une classe. */
+    var isPenetrator = currentBorneType === "penetrator";
+    document.getElementById("cabinet").classList.toggle("penetrator", isPenetrator);
+    document.getElementById("screen-wrap").classList.toggle("penetrator", isPenetrator);
+    if (window.FiveCadeGame) {
+      window.FiveCadeGame.onOpen(currentPlayerName, currentBorneType);
+    }
+  }
+
+  function closeApp() {
+    appEl.classList.remove("visible");
+    /* Coupe la saisie du nom si elle etait en cours (Echap pendant le
+     * game over) - sans ca l'ecran de saisie restait "arme" et pouvait
+     * ressurgir par-dessus le menu a la prochaine ouverture. */
+    if (window.FiveCadeBridge) {
+      window.FiveCadeBridge.cancelNamePrompt();
+    }
+    if (window.FiveCadeGame) {
+      window.FiveCadeGame.onClose();
+    }
+  }
+
+  window.addEventListener("message", function (event) {
+    var msg = event.data;
+    if (!msg || !msg.type) {
+      return;
+    }
+    if (msg.type === "fivecade_open") {
+      currentPlayerName = msg.playerName || "???";
+      currentBorneType = msg.borneType || "degenatron";
+      openApp();
+    } else if (msg.type === "fivecade_close") {
+      closeApp();
+    } else if (msg.type === "fivecade_scoresUpdated") {
+      if (window.FiveCadeGame) {
+        window.FiveCadeGame.onScoresUpdated(msg.scores || []);
+      }
+    }
+  });
+
+  document.addEventListener("keydown", function (event) {
+    if (event.key === "Escape" && appEl.classList.contains("visible")) {
+      event.preventDefault();
+      nuiPost("fivecade_close");
+      closeApp();
+    }
+  });
+
+  var nameEntryEl = document.getElementById("name-entry");
+  var nameEntryInput = document.getElementById("name-entry-input");
+  /* Reference vers le listener keydown actif de promptName (s'il y en a
+   * un) - necessaire pour pouvoir le retirer proprement si la borne est
+   * fermee (Echap) pendant la saisie du nom, voir cancelNamePrompt. */
+  var activeNameKeydownHandler = null;
+
+  /* Pont utilise par game.js pour parler a FiveM - independant de Phaser. */
+  window.FiveCadeBridge = {
+    requestScores: function () {
+      nuiPost("fivecade_requestScores");
+    },
+    submitScore: function (score, name) {
+      nuiPost("fivecade_submitScore", { playerName: (name || currentPlayerName), score: score });
+    },
+    /* Laisse le joueur choisir librement le nom affiche au classement
+     * plutot que de forcer le nom du personnage FiveM - callback(name)
+     * appele une fois valide (Entree ou clic). */
+    promptName: function (callback) {
+      /* Champ vide, aucune trace du nom FiveM (ni valeur ni
+       * placeholder) - demande explicite. Un mot generique sert de
+       * suggestion visuelle et de repli si laisse vide. */
+      nameEntryInput.value = "";
+      nameEntryInput.placeholder = "ANONYME";
+      nameEntryEl.classList.add("visible");
+      nameEntryInput.focus();
+
+      function submit() {
+        nameEntryEl.classList.remove("visible");
+        nameEntryInput.removeEventListener("keydown", onKeydown);
+        activeNameKeydownHandler = null;
+        var chosen = nameEntryInput.value.trim();
+        callback(chosen || "ANONYME");
+      }
+
+      function onKeydown(e) {
+        if (e.key === "Enter") {
+          e.preventDefault();
+          e.stopPropagation();
+          submit();
+        }
+      }
+
+      activeNameKeydownHandler = onKeydown;
+      nameEntryInput.addEventListener("keydown", onKeydown);
+    },
+    /* Ferme la saisie du nom sans jamais appeler le callback (donc sans
+     * jamais soumettre de score) - utilise quand la borne est fermee
+     * (Echap) pendant que le joueur tape encore son nom : tant pis pour
+     * lui, le score de cette partie n'est pas envoye, et la prochaine
+     * ouverture retombe sur le menu (voir closeApp/onClose) sans laisser
+     * cet ecran de saisie ressurgir par-dessus. */
+    cancelNamePrompt: function () {
+      nameEntryEl.classList.remove("visible");
+      if (activeNameKeydownHandler) {
+        nameEntryInput.removeEventListener("keydown", activeNameKeydownHandler);
+        activeNameKeydownHandler = null;
+      }
+    },
+    quit: function () {
+      nuiPost("fivecade_close");
+      closeApp();
+    }
+  };
+})();
+</script>
+<script src="game.js"></script>
+</body>
+</html>
