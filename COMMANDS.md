@@ -22,14 +22,16 @@ ci-dessous se tapent dans le chat/console **en jeu**.
 | `devtools_clearprops` | Retire **toutes** les bornes permanentes. |
 | `devtools_resetall` | Réinitialisation complète (préviews + bornes permanentes). |
 
-**Modèles de prop disponibles** (voir `fivecade_degenatron_penetrator/client/config.lua`) :
-- `ch_prop_arcade_degenatron_01a` — borne 1 (Degenatron)
-- `ch_prop_arcade_penetrator_01a` — borne 2 (Penetrator)
+**Modèles de prop disponibles** :
+- `ch_prop_arcade_degenatron_01a` — borne 1, Degenatron (voir `fivecade_degenatron_penetrator/client/config.lua`)
+- `ch_prop_arcade_penetrator_01a` — borne 2, Penetrator (même resource/config que ci-dessus)
+- `sum_prop_arcade_qub3d_01a` — borne 3, Qub3d (voir `fivecade_qub3d/client/config.lua`)
 
-Les deux modèles partagent exactement le même jeu/logique — seule la
-direction artistique (visuel du menu, sprites d'ennemis, teinte du
-vaisseau, musique) change selon le modèle posé, détecté automatiquement
-à l'ouverture.
+Degenatron et Penetrator partagent exactement le même jeu/logique —
+seule la direction artistique (visuel du menu, sprites d'ennemis,
+teinte du vaisseau, musique) change selon le modèle posé, détecté
+automatiquement à l'ouverture. Qub3d est une resource/un jeu à part
+entière.
 
 ## Nettoyer les classements (`fivecade_highscore`)
 
