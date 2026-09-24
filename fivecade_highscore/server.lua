@@ -4,7 +4,7 @@
 -- borneId (jamais par type de jeu) - permet a plusieurs bornes physiques
 -- du meme jeu de garder chacune leur propre classement independant.
 
-local MAX_SCORES_PER_BORNE = 10
+local MAX_SCORES_PER_BORNE = 25 -- Top 25 (demande utilisateur) ; Invade and Persuade l'affiche en deroulant, les autres bornes montrent les 10 premiers
 -- Plafond de plausibilite, pas un vrai calcul de score max theorique -
 -- juste large assez pour ne jamais gener un score legitime, mais assez
 -- serre pour empecher un score fabrique a la main (appel direct de

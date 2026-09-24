@@ -662,6 +662,11 @@ var LINES_PER_LEVEL = 10;
  * GameOverScene de savoir immediatement si un score entre dans le top 10
  * sans attendre un aller-retour reseau supplementaire. */
 var latestScores = [];
+/* Classement (regle commune a toutes les bornes FiveCade) : Top 25 par
+ * borne (MAX_SCORES_PER_BORNE de fivecade_highscore), liste DEROULANTE de
+ * SCORES_VISIBLE lignes ; un score qui ne bat pas le 25e n'entre pas. */
+var LEADERBOARD_SIZE = 25;
+var SCORES_VISIBLE = 10;
 
 function fallDelayForLevel(level) {
   return Math.max(140, 800 - (level - 1) * 55);
@@ -791,9 +796,12 @@ MenuScene.prototype.create = function () {
   var scoresText = this.add.text(GAME_WIDTH / 2, GAME_HEIGHT / 2 - 190, 'Chargement...', {
     fontFamily: 'Courier New', fontSize: '17px', color: '#e8edf7', align: 'left', lineSpacing: 10
   }).setOrigin(0.5, 0).setVisible(false);
-  var scoresHint = this.add.text(GAME_WIDTH / 2, GAME_HEIGHT / 2 + 230, 'ECHAP ou ENTREE pour revenir', {
+  var scoresHint = this.add.text(GAME_WIDTH / 2, GAME_HEIGHT / 2 + 230, 'HAUT/BAS defiler  -  ECHAP ou ENTREE pour revenir', {
     fontFamily: 'Courier New', fontSize: '12px', color: '#7fa8c9'
   }).setOrigin(0.5).setVisible(false);
+  this.scoresTrack = this.add.rectangle(GAME_WIDTH / 2 + 212, GAME_HEIGHT / 2 - 190, 5, SCORES_VISIBLE * 30, 0x14304a).setOrigin(0.5, 0).setVisible(false);
+  this.scoresThumb = this.add.rectangle(GAME_WIDTH / 2 + 212, GAME_HEIGHT / 2 - 190, 5, 40, 0x39e5ff).setOrigin(0.5, 0).setVisible(false);
+  this.scoresScroll = 0;
 
   this.panelBg = panelBg;
   this.scoresTitle = scoresTitle;
@@ -804,6 +812,10 @@ MenuScene.prototype.create = function () {
   this.cursors = this.input.keyboard.createCursorKeys();
   this.enterKey = this.input.keyboard.addKey(Phaser.Input.Keyboard.KeyCodes.ENTER);
   this.escKey = this.input.keyboard.addKey(Phaser.Input.Keyboard.KeyCodes.ESC);
+  // Navigation sur les EVENEMENTS clavier : Keyboard.JustDown perd une
+  // frappe tres breve (appui + relachement dans la meme image).
+  this.input.keyboard.on('keydown', function (ev) { this.onMenuKey(ev.key); }, this);
+  this.input.on('wheel', function (p, o, dx, dy) { if (this.scoresPanel) this.scrollScores(dy > 0 ? 3 : -3); }, this);
 
   if (window.FiveCadeBridge) {
     window.FiveCadeBridge.requestScores();
@@ -854,6 +866,7 @@ MenuScene.prototype.activateItem = function (i) {
 
 MenuScene.prototype.openScores = function () {
   this.scoresPanel = true;
+  this.scoresScroll = 0;
   this.panelBg.setVisible(true);
   this.scoresTitle.setVisible(true);
   this.scoresText.setVisible(true);
@@ -868,19 +881,54 @@ MenuScene.prototype.closeScores = function () {
   this.scoresTitle.setVisible(false);
   this.scoresText.setVisible(false);
   this.scoresHint.setVisible(false);
+  this.scoresTrack.setVisible(false);
+  this.scoresThumb.setVisible(false);
   this.menuTexts.forEach(function (t) { t.setVisible(true); });
 };
 
+MenuScene.prototype.scrollScores = function (delta) {
+  var maxScroll = Math.max(0, latestScores.length - SCORES_VISIBLE);
+  var next = Phaser.Math.Clamp(this.scoresScroll + delta, 0, maxScroll);
+  if (next === this.scoresScroll) { return; }
+  this.scoresScroll = next;
+  this.renderScores(latestScores);
+};
+
+MenuScene.prototype.onMenuKey = function (key) {
+  if (this.scoresPanel) {
+    if (key === 'ArrowUp') { this.scrollScores(-1); }
+    else if (key === 'ArrowDown') { this.scrollScores(1); }
+    else if (key === 'PageUp') { this.scrollScores(-SCORES_VISIBLE); }
+    else if (key === 'PageDown') { this.scrollScores(SCORES_VISIBLE); }
+    else if (['Enter', ' ', 'Backspace', 'ArrowLeft', 'ArrowRight'].indexOf(key) >= 0) { this.closeScores(); }
+    return;
+  }
+  if (key === 'ArrowUp') { this.setSelected((this.selectedIndex + 2) % 3); }
+  else if (key === 'ArrowDown') { this.setSelected((this.selectedIndex + 1) % 3); }
+  else if (key === 'Enter') { this.activateItem(this.selectedIndex); }
+};
+
 MenuScene.prototype.renderScores = function (scores) {
+  var scrollable = !!scores && scores.length > SCORES_VISIBLE && this.scoresPanel;
+  this.scoresTrack.setVisible(scrollable);
+  this.scoresThumb.setVisible(scrollable);
   if (!scores || scores.length === 0) {
     this.scoresText.setText('Aucun score pour le moment.');
     return;
   }
-  var lines = scores.slice(0, 10).map(function (s, i) {
-    var rank = (i + 1) + '.';
-    return rank.padEnd(4, ' ') + s.name.padEnd(17, ' ') + s.score;
+  this.scoresScroll = Math.min(this.scoresScroll || 0, Math.max(0, scores.length - SCORES_VISIBLE));
+  var from = this.scoresScroll;
+  var lines = scores.slice(from, from + SCORES_VISIBLE).map(function (s, i) {
+    var rank = (from + i + 1) + '.';
+    return rank.padEnd(4, ' ') + String(s.name || '???').slice(0, 16).padEnd(17, ' ') + s.score;
   });
   this.scoresText.setText(lines.join('\n'));
+  if (scrollable) {
+    var trackH = SCORES_VISIBLE * 30;
+    var thumbH = Math.max(24, trackH * SCORES_VISIBLE / scores.length);
+    this.scoresThumb.height = thumbH;
+    this.scoresThumb.y = this.scoresTrack.y + (trackH - thumbH) * (from / (scores.length - SCORES_VISIBLE));
+  }
 };
 
 MenuScene.prototype.onScoresUpdated = function (scores) {
@@ -897,19 +945,7 @@ MenuScene.prototype.update = function (time) {
     this.menuTexts[0].setColor(color);
     this.menuTexts[0].setShadow(0, 0, color, 14, true, true);
   }
-  if (this.scoresPanel) {
-    if (Phaser.Input.Keyboard.JustDown(this.enterKey) || Phaser.Input.Keyboard.JustDown(this.escKey)) {
-      this.closeScores();
-    }
-    return;
-  }
-  if (Phaser.Input.Keyboard.JustDown(this.cursors.up)) {
-    this.setSelected((this.selectedIndex + 2) % 3);
-  } else if (Phaser.Input.Keyboard.JustDown(this.cursors.down)) {
-    this.setSelected((this.selectedIndex + 1) % 3);
-  } else if (Phaser.Input.Keyboard.JustDown(this.enterKey)) {
-    this.activateItem(this.selectedIndex);
-  }
+  // (navigation : evenements clavier, voir onMenuKey)
 };
 
 /* ============================================================
@@ -1591,7 +1627,7 @@ GameOverScene.prototype.create = function (data) {
    * le top 10 de cette borne (moins de 10 scores enregistres, ou score
    * strictement superieur au dernier du classement connu) - pas a
    * chaque partie, demande explicite de l'utilisateur. */
-  var qualifies = latestScores.length < 10 || score > latestScores[latestScores.length - 1].score;
+  var qualifies = latestScores.length < LEADERBOARD_SIZE || score > latestScores[latestScores.length - 1].score;
 
   function showContinueHint() {
     self.continueHint.setText('ENTREE pour rejouer   -   ECHAP pour quitter');
@@ -1604,15 +1640,22 @@ GameOverScene.prototype.create = function (data) {
       showContinueHint();
     });
   } else {
+    if (score > 0 && !qualifies) {
+      this.add.text(GAME_WIDTH / 2, GAME_HEIGHT / 2 + 8,
+        'Pas assez pour entrer au Top ' + LEADERBOARD_SIZE + ' (25e : ' + latestScores[latestScores.length - 1].score + ')', {
+          fontFamily: 'Courier New', fontSize: '14px', color: '#ff9a7a'
+        }).setOrigin(0.5);
+    }
     showContinueHint();
   }
+  this.input.keyboard.on('keydown', function (ev) {
+    if (self.readyForInput && ev.key === 'Enter') { self.scene.start('MenuScene'); }
+  });
 };
 
 GameOverScene.prototype.update = function (time, delta) {
   if (this.starfield) { this.starfield.tilePositionY -= delta * 0.03; }
-  if (this.readyForInput && Phaser.Input.Keyboard.JustDown(this.enterKey)) {
-    this.scene.start('MenuScene');
-  }
+  // (rejouer : evenement keydown, voir create)
 };
 
 /* ============================================================
@@ -1664,6 +1707,15 @@ GameOverScene.prototype.update = function (time, delta) {
       game.scene.stop('MenuScene');
       menuSceneRef = null;
       mainSceneRef = null;
+    },
+    // Appele par index.html sur Echap : true = panneau des scores referme,
+    // la borne ne se ferme pas.
+    consumeEscape: function () {
+      if (menuSceneRef && menuSceneRef.scoresPanel) {
+        menuSceneRef.closeScores();
+        return true;
+      }
+      return false;
     },
     onScoresUpdated: function (scores) {
       latestScores = scores || [];

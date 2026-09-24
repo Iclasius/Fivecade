@@ -2,7 +2,7 @@
 <html lang="fr">
 <head>
 <meta charset="utf-8">
-<title>Degenatron / Penetrator</title>
+<title>Invade and Persuade</title>
 <style>
   html, body {
     margin: 0;
@@ -17,70 +17,53 @@
     display: none;
     position: fixed;
     inset: 0;
-    /* Quasi-opaque : on ne doit voir que l'ecran de la borne, pas le
-       decor GTA derriere - une transparence visible cassait
-       l'immersion (on voyait le monde autour de l'ecran). */
     background: rgba(0, 0, 0, 0.97);
   }
   #app.visible {
     display: block;
   }
-  /* Cadre "borne" reel (bezel.png) etire jusqu'aux bords de l'ecran -
-     demande explicite de l'utilisateur ("le cadre doit prendre la
-     bordure de l'ecran, quitte a etre un peu plus large") plutot que
-     de garder le ratio natif 4:3 de l'image avec des bandes noires.
-     La decoupe transparente est positionnee en % (pas en px) pour
-     rester calee sur le cadre quelle que soit la taille d'ecran :
-     native 106,112 -> 1348,956 dans une image de 1448x1086. */
+  /* Cadre "borne" reel (bezel.png, fourni par l'utilisateur) etire
+     jusqu'aux bords de l'ecran, meme principe que la borne Degenatron.
+     La decoupe transparente est positionnee en % pour rester calee sur
+     le cadre quelle que soit la taille d'ecran : native 169,163 ->
+     1285,837 dans une image de 1448x1086, coins arrondis ~58px. */
   #cabinet {
     position: fixed;
     inset: 0;
-    background: url('bezel.png') no-repeat center / 100% 100%;
-  }
-  /* Cadre dedie pour la borne Penetrator (DA differente, meme jeu) -
-     decoupe transparente a un autre endroit/ratio que bezel.png :
-     native 152,204 -> 968,1032 dans une image de 1122x1402. */
-  #cabinet.penetrator {
-    background-image: url('bezel-penetrator.png');
+    background: #000 url('bezel.png') no-repeat center / 100% 100%;
   }
   #screen-wrap {
     position: absolute;
-    left: 7.32%;
-    top: 10.31%;
-    width: 85.77%;
-    height: 77.72%;
-    border-radius: 2.5%;
+    left: 11.67%;
+    top: 15.01%;
+    width: 77.14%;
+    height: 62.15%;
+    border-radius: 5.2% / 8.6%;
     overflow: hidden;
     background: #000;
-  }
-  #screen-wrap.penetrator {
-    left: 13.55%;
-    top: 14.55%;
-    width: 72.73%;
-    height: 59.06%;
   }
   #game-container {
     width: 100%;
     height: 100%;
   }
+  /* object-fit: contain garde les proportions 16:9 du jeu (pas de pixel
+     art deforme) : la decoupe du cadre etant plus large que 16:9 une fois
+     etiree, de fines bandes noires peuvent apparaitre sur les cotes. */
   #game-container canvas {
     display: block;
     width: 100% !important;
     height: 100% !important;
-    /* Pas de "pixelated"/nearest-neighbor ici : le canvas (resolution
-     * interne fixe, voir GAME_WIDTH/GAME_HEIGHT) est mis a l'echelle
-     * (generalement vers le bas) dans la decoupe du cadre, qui varie
-     * selon la taille d'ecran - un rendu "pixelated" y rendait le texte
-     * illisible/deforme (ex: "GAME OVER"/"ENTREE" corrompus visuellement)
-     * et aurait aussi cranele les sprites (illustrations detaillees, pas
-     * du vrai pixel art 8-bit). Lissage navigateur par defaut a la place.
-     */
+    object-fit: contain;
+  }
+  /* Voir updateCanvasSmoothing() : lissage quand l'affichage REDUIT le jeu. */
+  #game-container canvas.smooth {
+    image-rendering: auto !important;
   }
   #hint {
     position: absolute;
     left: 0;
     right: 0;
-    bottom: 6px;
+    bottom: 6px; /* en bas : le haut de l'ecran est occupe par l'interface du jeu */
     text-align: center;
     color: #f0d9ff;
     font-size: 11px;
@@ -189,7 +172,7 @@
 
   var RESOURCE_NAME = (typeof GetParentResourceName === "function")
     ? GetParentResourceName()
-    : "fivecade_degenatron_penetrator";
+    : "fivecade_invade_persuade";
 
   function nuiPost(name, data) {
     return fetch("https://" + RESOURCE_NAME + "/" + name, {
@@ -213,30 +196,40 @@
   });
 
   var currentPlayerName = "???";
-  var currentBorneType = "degenatron";
+  var currentBorneType = "invade";
 
   /* Auto-ouverture pour capture d'ecran/preview hors FiveM uniquement
-   * (?autoopen=1, optionnellement ?borneType=penetrator) - sans effet
-   * en jeu, l'URL NUI reelle n'a jamais ces parametres. */
+   * (?autoopen=1) - sans effet en jeu, l'URL NUI reelle n'a jamais ce
+   * parametre. */
   if (/[?&]autoopen=1/.test(location.search)) {
     window.addEventListener("load", function () {
       currentPlayerName = "Preview";
-      var m = location.search.match(/[?&]borneType=([a-z]+)/);
-      currentBorneType = (m && m[1]) || "degenatron";
       openApp();
     });
   }
 
+  /* Nettete du pixel art selon l'echelle d'affichage : le jeu est dessine
+     en 720px de haut, mais en 1920x1080 la decoupe du cadre n'en fait que
+     ~671 (echelle 0.93). En mode "pixelated", une reduction non entiere
+     SUPPRIME des lignes de pixels (1 sur 14 environ : contours hachures) ;
+     en dessous de 1 on passe donc en lissage (reduction propre, a peine
+     plus douce), et on garde "pixelated" des que l'echelle est >= 1. */
+  function updateCanvasSmoothing() {
+    var wrap = document.getElementById("screen-wrap");
+    var canvas = document.querySelector("#game-container canvas");
+    if (!wrap || !canvas || !canvas.height) return;
+    var scale = Math.min(wrap.clientWidth / canvas.width, wrap.clientHeight / canvas.height);
+    canvas.classList.toggle("smooth", scale < 1);
+  }
+  window.addEventListener("resize", updateCanvasSmoothing);
+
   function openApp() {
     appEl.classList.add("visible");
-    /* Cadre/decoupe dedies a la borne Penetrator (meme jeu, DA
-     * differente) - bascule les deux en meme temps via une classe. */
-    var isPenetrator = currentBorneType === "penetrator";
-    document.getElementById("cabinet").classList.toggle("penetrator", isPenetrator);
-    document.getElementById("screen-wrap").classList.toggle("penetrator", isPenetrator);
     if (window.FiveCadeGame) {
       window.FiveCadeGame.onOpen(currentPlayerName, currentBorneType);
     }
+    updateCanvasSmoothing();
+    setTimeout(updateCanvasSmoothing, 300); // le canvas Phaser peut ne pas exister encore
   }
 
   function closeApp() {
@@ -259,7 +252,7 @@
     }
     if (msg.type === "fivecade_open") {
       currentPlayerName = msg.playerName || "???";
-      currentBorneType = msg.borneType || "degenatron";
+      currentBorneType = msg.borneType || "invade";
       openApp();
     } else if (msg.type === "fivecade_close") {
       closeApp();
@@ -273,7 +266,9 @@
   document.addEventListener("keydown", function (event) {
     if (event.key === "Escape" && appEl.classList.contains("visible")) {
       event.preventDefault();
-      if (window.FiveCadeGame && window.FiveCadeGame.consumeEscape && window.FiveCadeGame.consumeEscape()) return; // panneau scores d'abord
+      // Echap referme d'abord un panneau ouvert (meilleurs scores) avant
+      // de quitter la borne.
+      if (window.FiveCadeGame && window.FiveCadeGame.consumeEscape && window.FiveCadeGame.consumeEscape()) return;
       nuiPost("fivecade_close");
       closeApp();
     }
@@ -294,13 +289,7 @@
     submitScore: function (score, name) {
       nuiPost("fivecade_submitScore", { playerName: (name || currentPlayerName), score: score });
     },
-    /* Laisse le joueur choisir librement le nom affiche au classement
-     * plutot que de forcer le nom du personnage FiveM - callback(name)
-     * appele une fois valide (Entree ou clic). */
     promptName: function (callback) {
-      /* Champ vide, aucune trace du nom FiveM (ni valeur ni
-       * placeholder) - demande explicite. Un mot generique sert de
-       * suggestion visuelle et de repli si laisse vide. */
       nameEntryInput.value = "";
       nameEntryInput.placeholder = "ANONYME";
       nameEntryEl.classList.add("visible");
@@ -325,12 +314,6 @@
       activeNameKeydownHandler = onKeydown;
       nameEntryInput.addEventListener("keydown", onKeydown);
     },
-    /* Ferme la saisie du nom sans jamais appeler le callback (donc sans
-     * jamais soumettre de score) - utilise quand la borne est fermee
-     * (Echap) pendant que le joueur tape encore son nom : tant pis pour
-     * lui, le score de cette partie n'est pas envoye, et la prochaine
-     * ouverture retombe sur le menu (voir closeApp/onClose) sans laisser
-     * cet ecran de saisie ressurgir par-dessus. */
     cancelNamePrompt: function () {
       nameEntryEl.classList.remove("visible");
       if (activeNameKeydownHandler) {
@@ -345,6 +328,7 @@
   };
 })();
 </script>
+<script src="audio.js"></script>
 <script src="game.js"></script>
 </body>
 </html>

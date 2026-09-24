@@ -1,0 +1,14 @@
+Musiques de la borne (OGG, ou MP3 du meme nom) :
+
+  menu.ogg     -> page d'accueil (en boucle)
+  level1.ogg   -> partie, 1er morceau
+  level2.ogg   -> partie, 2e morceau
+  level3.ogg   -> partie, 3e morceau
+  level4.ogg ... autant qu'on veut, numerotes a la suite
+
+Chaque morceau de partie tourne 3 fois puis fondu vers le suivant ;
+apres le dernier on reprend au level1.
+
+Les morceaux actuels sont composes et generes par
+D:\FiveCade\tools\invade_persuade_music.py (relancer le script pour
+les regenerer apres une retouche de la partition).

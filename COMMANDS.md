@@ -33,6 +33,13 @@ teinte du vaisseau, musique) change selon le modèle posé, détecté
 automatiquement à l'ouverture. Qub3d est une resource/un jeu à part
 entière.
 
+## Classements : règle commune à toutes les bornes
+
+- **Top 25** par borne (`MAX_SCORES_PER_BORNE` dans `fivecade_highscore/server.lua`).
+- Panneau **Meilleurs scores** déroulant : HAUT/BAS (ou molette) pour faire défiler, ENTRÉE ou ÉCHAP pour revenir au menu (Échap ne ferme plus la borne quand le panneau est ouvert).
+- En fin de partie, si le score ne bat pas le 25e, aucun nom n'est demandé et le score n'est pas enregistré.
+- Toute nouvelle borne doit reprendre ce fonctionnement.
+
 ## Nettoyer les classements (`fivecade_highscore`)
 
 ```

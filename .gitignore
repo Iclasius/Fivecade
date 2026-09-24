@@ -1,3 +1,8 @@
 .DS_Store
 Thumbs.db
 *.log
+
+# Sauvegardes locales de sprites/sons (jamais publiees)
+*_backup.*
+*-backup.*
+__pycache__/

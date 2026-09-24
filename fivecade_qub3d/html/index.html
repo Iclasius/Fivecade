@@ -289,6 +289,7 @@
   document.addEventListener("keydown", function (event) {
     if (event.key === "Escape" && appEl.classList.contains("visible")) {
       event.preventDefault();
+      if (window.FiveCadeGame && window.FiveCadeGame.consumeEscape && window.FiveCadeGame.consumeEscape()) return; // panneau scores d'abord
       nuiPost("fivecade_close");
       closeApp();
     }

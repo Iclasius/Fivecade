@@ -201,6 +201,14 @@ function safeAddMusic(scene, key, config) {
 /* ============================================================
  * BootScene - genere toutes les textures placeholder une seule fois
  * ============================================================ */
+/* Classement (regle commune a toutes les bornes FiveCade) : Top 25 par
+ * borne (MAX_SCORES_PER_BORNE de fivecade_highscore), affiche en liste
+ * DEROULANTE de SCORES_VISIBLE lignes ; un score qui ne bat pas le 25e
+ * n'entre pas et on ne demande pas de nom en fin de partie. */
+var LEADERBOARD_SIZE = 25;
+var SCORES_VISIBLE = 10;
+var latestLeaderboard = null; // dernier classement recu (null = inconnu)
+
 class BootScene extends Phaser.Scene {
   constructor() {
     super('BootScene');
@@ -386,12 +394,19 @@ class MenuScene extends Phaser.Scene {
     this.scoresText = this.add.text(GAME_WIDTH / 2, GAME_HEIGHT / 2 - 160, 'Chargement...', {
       fontFamily: 'monospace', fontSize: '13px', color: '#dff6ff', align: 'center', lineSpacing: 8
     }).setOrigin(0.5, 0);
-    this.scoresHint = this.add.text(GAME_WIDTH / 2, GAME_HEIGHT / 2 + 198, 'ECHAP ou ENTREE pour revenir', {
+    this.scoresHint = this.add.text(GAME_WIDTH / 2, GAME_HEIGHT / 2 + 198, 'HAUT/BAS defiler  -  ECHAP ou ENTREE pour revenir', {
       fontFamily: 'monospace', fontSize: '10px', color: '#9be7ff'
     }).setOrigin(0.5);
-    this.scoresPanel.add([panelBg, this.scoresTitle, this.scoresText, this.scoresHint]);
+    this.scoresTrack = this.add.rectangle(GAME_WIDTH / 2 + 185, GAME_HEIGHT / 2 - 160, 4, SCORES_VISIBLE * 21, 0x16324a).setOrigin(0.5, 0);
+    this.scoresThumb = this.add.rectangle(GAME_WIDTH / 2 + 185, GAME_HEIGHT / 2 - 160, 4, 30, 0x3ad6ff).setOrigin(0.5, 0);
+    this.scoresPanel.add([panelBg, this.scoresTitle, this.scoresText, this.scoresHint, this.scoresTrack, this.scoresThumb]);
+    this.scoresScroll = 0;
 
     this.keys = this.input.keyboard.addKeys('UP,DOWN,ENTER,SPACE,ESC');
+    // Navigation sur les EVENEMENTS clavier : Keyboard.JustDown perd une
+    // frappe tres breve (appui + relachement dans la meme image).
+    this.input.keyboard.on('keydown', function (ev) { this.onMenuKey(ev.key); }, this);
+    this.input.on('wheel', function (p, o, dx, dy) { if (this.scoresPanel.visible) this.scrollScores(dy > 0 ? 3 : -3); }, this);
     this.setSelected(0);
 
     this.latestScores = [];
@@ -425,6 +440,7 @@ class MenuScene extends Phaser.Scene {
   }
 
   openScores() {
+    this.scoresScroll = 0;
     this.scoresPanel.setVisible(true);
     this.texts.forEach(function (t) { t.setVisible(false); });
     this.faceImage.setVisible(false);
@@ -445,34 +461,56 @@ class MenuScene extends Phaser.Scene {
     }
   }
 
+  scrollScores(delta) {
+    var maxScroll = Math.max(0, this.latestScores.length - SCORES_VISIBLE);
+    var next = Phaser.Math.Clamp(this.scoresScroll + delta, 0, maxScroll);
+    if (next === this.scoresScroll) return;
+    this.scoresScroll = next;
+    this.renderScores();
+  }
+
   renderScores() {
-    if (!this.latestScores.length) {
+    var list = this.latestScores;
+    var scrollable = list.length > SCORES_VISIBLE;
+    this.scoresTrack.setVisible(scrollable);
+    this.scoresThumb.setVisible(scrollable);
+    if (!list.length) {
       this.scoresText.setText('Aucun score enregistre');
       return;
     }
-    var lines = this.latestScores.slice(0, 10).map(function (s, i) {
-      var rank = (i + 1) + '.';
-      return rank.padEnd(4) + (s.name || '???').padEnd(14) + s.score;
+    this.scoresScroll = Math.min(this.scoresScroll, Math.max(0, list.length - SCORES_VISIBLE));
+    var from = this.scoresScroll;
+    var lines = list.slice(from, from + SCORES_VISIBLE).map(function (s, i) {
+      var rank = (from + i + 1) + '.';
+      return rank.padEnd(4) + String(s.name || '???').slice(0, 16).padEnd(17) + s.score;
     });
     this.scoresText.setText(lines.join('\n'));
+    if (scrollable) {
+      var trackH = SCORES_VISIBLE * 21;
+      var thumbH = Math.max(18, trackH * SCORES_VISIBLE / list.length);
+      this.scoresThumb.height = thumbH;
+      this.scoresThumb.y = this.scoresTrack.y + (trackH - thumbH) * (from / (list.length - SCORES_VISIBLE));
+    }
+  }
+
+  onMenuKey(key) {
+    if (this.scoresPanel.visible) {
+      if (key === 'ArrowUp') this.scrollScores(-1);
+      else if (key === 'ArrowDown') this.scrollScores(1);
+      else if (key === 'PageUp') this.scrollScores(-SCORES_VISIBLE);
+      else if (key === 'PageDown') this.scrollScores(SCORES_VISIBLE);
+      else if (['Enter', ' ', 'Backspace', 'ArrowLeft', 'ArrowRight'].indexOf(key) >= 0) this.closeScores();
+      return;
+    }
+    if (key === 'ArrowUp') this.setSelected((this.selected + this.items.length - 1) % this.items.length);
+    else if (key === 'ArrowDown') this.setSelected((this.selected + 1) % this.items.length);
+    else if (key === 'Enter' || key === ' ') this.activate(this.selected);
   }
 
   update(time, delta) {
     updateStarfield(this.starLayer, delta / 1000);
 
-    if (this.scoresPanel.visible) {
-      if (Phaser.Input.Keyboard.JustDown(this.keys.ESC) || Phaser.Input.Keyboard.JustDown(this.keys.ENTER)) {
-        this.closeScores();
-      }
-      return;
-    }
-    if (Phaser.Input.Keyboard.JustDown(this.keys.UP)) {
-      this.setSelected((this.selected + this.items.length - 1) % this.items.length);
-    } else if (Phaser.Input.Keyboard.JustDown(this.keys.DOWN)) {
-      this.setSelected((this.selected + 1) % this.items.length);
-    } else if (Phaser.Input.Keyboard.JustDown(this.keys.ENTER) || Phaser.Input.Keyboard.JustDown(this.keys.SPACE)) {
-      this.activate(this.selected);
-    }
+    // (navigation : evenements clavier, voir onMenuKey)
   }
 }
 
@@ -1364,16 +1402,27 @@ class GameOverScene extends Phaser.Scene {
       }).setOrigin(0.5).setVisible(false)
     ];
 
-    this.keys = this.input.keyboard.addKeys('ENTER,SPACE');
     this.stage = 'gameover';
+    window.FiveCadeBridge.requestScores(); // classement a jour -> latestLeaderboard
 
     var self = this;
     this.input.keyboard.once('keydown', function () {
       if (self.stage !== 'gameover') {
         return;
       }
-      self.stage = 'naming';
       self.continueHint.setVisible(false);
+      if (!self.qualifiesForLeaderboard()) {
+        // Pas dans le Top 25 : pas de saisie de nom, score non enregistre.
+        var last = latestLeaderboard[latestLeaderboard.length - 1];
+        self.add.text(GAME_WIDTH / 2, GAME_HEIGHT / 2 + 12,
+          'Pas assez pour entrer au Top ' + LEADERBOARD_SIZE + ' (25e : ' + last.score + ')', {
+            fontFamily: 'monospace', fontSize: '12px', color: '#ff9a7a'
+          }).setOrigin(0.5);
+        self.replayHints.forEach(function (t) { t.setVisible(true); });
+        self.stage = 'replay';
+        return;
+      }
+      self.stage = 'naming';
 
       /* Nom libre pour le classement plutot que force au nom du
        * personnage FiveM - demande explicitement par l'utilisateur. */
@@ -1383,15 +1432,19 @@ class GameOverScene extends Phaser.Scene {
         self.stage = 'replay';
       });
     });
+    this.input.keyboard.on('keydown', function (ev) {
+      if (self.stage === 'replay' && (ev.key === 'Enter' || ev.key === ' ')) self.scene.start('MainScene');
+    });
+  }
+
+  qualifiesForLeaderboard() {
+    if (this.finalScore <= 0) return false;
+    if (!latestLeaderboard || latestLeaderboard.length < LEADERBOARD_SIZE) return true;
+    return this.finalScore > latestLeaderboard[latestLeaderboard.length - 1].score;
   }
 
   update() {
-    if (this.stage !== 'replay') {
-      return;
-    }
-    if (Phaser.Input.Keyboard.JustDown(this.keys.ENTER) || Phaser.Input.Keyboard.JustDown(this.keys.SPACE)) {
-      this.scene.start('MainScene');
-    }
+    // (rejouer : evenement keydown, voir create)
   }
 }
 
@@ -1481,7 +1534,17 @@ class GameOverScene extends Phaser.Scene {
       menuSceneRef = null;
       mainSceneRef = null;
     },
+    // Appele par index.html sur Echap : true = panneau des scores referme,
+    // la borne ne se ferme pas.
+    consumeEscape: function () {
+      if (menuSceneRef && menuSceneRef.scoresPanel && menuSceneRef.scoresPanel.visible) {
+        menuSceneRef.closeScores();
+        return true;
+      }
+      return false;
+    },
     onScoresUpdated: function (scores) {
+      latestLeaderboard = scores || [];
       if (menuSceneRef) {
         menuSceneRef.onScoresUpdated(scores);
       }
