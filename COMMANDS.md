@@ -26,6 +26,26 @@ ci-dessous se tapent dans le chat/console **en jeu**.
 - `ch_prop_arcade_degenatron_01a` — borne 1, Degenatron (voir `fivecade_degenatron_penetrator/client/config.lua`)
 - `ch_prop_arcade_penetrator_01a` — borne 2, Penetrator (même resource/config que ci-dessus)
 - `sum_prop_arcade_qub3d_01a` — borne 3, Qub3d (voir `fivecade_qub3d/client/config.lua`)
+- `ch_prop_arcade_invade_01a` — Invade and Persuade (voir `fivecade_invade_persuade/client/config.lua`)
+- `vw_prop_vw_arcade_02a` / `02b` / `02c` / `02d` — Street Wars, Gang Wars Edition (voir ci-dessous)
+
+## Street Wars, Gang Wars Edition : les 4 bornes
+
+Les 4 variantes du même meuble lancent toutes le même jeu (4 joueurs en
+ligne, une borne par joueur). La couleur de la borne donne seulement le
+cadre affiché à l'écran et le gang proposé en premier ; le gang se
+choisit ensuite en jeu. On les pose **une par une**, en jeu :
+
+| Borne | Couleur (gang) | Commandes |
+|---|---|---|
+| `vw_prop_vw_arcade_02a` | **Vert** | `devtools_spawnprop vw_prop_vw_arcade_02a` puis `devtools_saveprop` |
+| `vw_prop_vw_arcade_02b` | **Violet** | `devtools_spawnprop vw_prop_vw_arcade_02b` puis `devtools_saveprop` |
+| `vw_prop_vw_arcade_02c` | **Jaune** | `devtools_spawnprop vw_prop_vw_arcade_02c` puis `devtools_saveprop` |
+| `vw_prop_vw_arcade_02d` | **Bleu** | `devtools_spawnprop vw_prop_vw_arcade_02d` puis `devtools_saveprop` |
+
+Borne déjà présente dans une map/MLO (module `fivecade_staticbornes`) :
+se placer devant et taper `fivecade_registerstatic fivecade_street_wars <couleur>`
+avec `green`, `purple`, `yellow` ou `blue`.
 
 Degenatron et Penetrator partagent exactement le même jeu/logique —
 seule la direction artistique (visuel du menu, sprites d'ennemis,

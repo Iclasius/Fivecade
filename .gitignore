@@ -6,3 +6,6 @@ Thumbs.db
 *_backup.*
 *-backup.*
 __pycache__/
+
+# Portraits Street Wars : art Rockstar, jamais publie sur GitHub (garde en local + sauvegarde OneDrive)
+fivecade_street_wars/html/portraits.webp

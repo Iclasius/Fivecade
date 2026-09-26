@@ -80,6 +80,26 @@ tourelle, des élans « police montée » qui chargent et des drones rouillés.
   bruitages et 4 musiques 16 bits originales (accueil + 3 niveaux en
   rotation), touche **M** pour couper le son.
 
+### Street Wars, Gang Wars Edition — `fivecade_street_wars`
+
+Bomberman de conquête de territoire à **4 joueurs en ligne** (une borne
+par joueur, CPU pour compléter), sur les 4 variantes du même meuble :
+`vw_prop_vw_arcade_02a` (vert), `02b` (violet), `02c` (jaune), `02d` (bleu).
+Commandes de placement dans [`COMMANDS.md`](./COMMANDS.md).
+
+- Salons ouverts depuis n'importe quelle borne, gang unique par partie,
+  nom de joueur facultatif tapé en jeu, compte à rebours quand les 4
+  places sont verrouillées ; un joueur qui quitte est remplacé par un CPU.
+- Les bombes colorent chaque case traversée ; bâtiments destructibles case
+  par case, murs blindés indestructibles, bonus portée / bombe / vitesse.
+- 5 vies par manche, 4 manches : les cases de chaque gang encore en vie
+  s'additionnent, départage aux kills. Descente de police en 3 vagues à
+  la fin de chaque manche.
+- Moteur partagé (`html/sim.js`) entre le serveur JS et la NUI, tout au
+  clavier, musiques hip-hop et bruitages générés, **M** coupe le son.
+- Les portraits (`html/portraits.webp`) ne sont pas publiés : les ajouter
+  localement.
+
 ### Bornes natives — `fivecade_staticbornes`
 
 Permet d'enregistrer des bornes déjà présentes dans une map/MLO (sans
