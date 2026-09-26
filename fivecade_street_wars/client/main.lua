@@ -30,6 +30,18 @@ local function GetBorneIdFromCoords(coords)
     )
 end
 
+-- Couleur d'une borne native : accepte green/purple/yellow/blue, les noms
+-- francais (vert/violet/jaune/bleu) ou le suffixe du modele (02a..02d).
+local COLOR_ALIASES = {
+    green = 'green', vert = 'green', ['02a'] = 'green',
+    purple = 'purple', violet = 'purple', ['02b'] = 'purple',
+    yellow = 'yellow', jaune = 'yellow', ['02c'] = 'yellow',
+    blue = 'blue', bleu = 'blue', ['02d'] = 'blue',
+}
+local function NormalizeColor(value)
+    return COLOR_ALIASES[string.lower(tostring(value or ''))] or 'green'
+end
+
 local function FindNearbyBorne(playerCoords)
     local closestCoords, closestDist, closestColor = nil, FiveCadeStreetWarsConfig.scanRadius, nil
 
@@ -52,7 +64,7 @@ local function FindNearbyBorne(playerCoords)
         local coords = vector3(entry.x, entry.y, entry.z)
         local dist = #(playerCoords - coords)
         if dist < closestDist then
-            closestCoords, closestDist, closestColor = coords, dist, entry.borneType or 'green'
+            closestCoords, closestDist, closestColor = coords, dist, NormalizeColor(entry.borneType)
         end
     end
 

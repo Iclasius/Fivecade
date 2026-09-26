@@ -39,6 +39,9 @@ end
 
 local function SaveStatic(resourceName, list)
     SetResourceKvp(KvpKey(resourceName), json.encode(list))
+    -- Tous les joueurs connectes recoivent la nouvelle liste tout de suite :
+    -- la borne est jouable sans reconnexion ni redemarrage de ressource.
+    TriggerClientEvent("fivecade:staticBornesLoaded", -1, resourceName, list)
 end
 
 local function Notify(src, msg)

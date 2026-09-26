@@ -43,9 +43,27 @@ choisit ensuite en jeu. On les pose **une par une**, en jeu :
 | `vw_prop_vw_arcade_02c` | **Jaune** | `devtools_spawnprop vw_prop_vw_arcade_02c` puis `devtools_saveprop` |
 | `vw_prop_vw_arcade_02d` | **Bleu** | `devtools_spawnprop vw_prop_vw_arcade_02d` puis `devtools_saveprop` |
 
-Borne déjà présente dans une map/MLO (module `fivecade_staticbornes`) :
-se placer devant et taper `fivecade_registerstatic fivecade_street_wars <couleur>`
-avec `green`, `purple`, `yellow` ou `blue`.
+### Borne déjà présente dans une map/MLO
+
+Une borne posée par une map/MLO n'est pas détectée automatiquement (ce
+n'est pas un objet dynamique). On l'enregistre une fois, en jeu, avec le
+module `fivecade_staticbornes` (qui doit être démarré) : se placer
+**devant l'écran de la borne**, là où le joueur se tiendra, puis taper la
+commande correspondant à sa couleur :
+
+| Borne dans la MLO | Commande |
+|---|---|
+| Verte (`02a`) | `fivecade_registerstatic fivecade_street_wars green` |
+| Violette (`02b`) | `fivecade_registerstatic fivecade_street_wars purple` |
+| Jaune (`02c`) | `fivecade_registerstatic fivecade_street_wars yellow` |
+| Bleue (`02d`) | `fivecade_registerstatic fivecade_street_wars blue` |
+
+La borne devient jouable immédiatement pour tous les joueurs connectés
+(les noms français `vert`/`violet`/`jaune`/`bleu` marchent aussi).
+Vérifier : `fivecade_liststatic fivecade_street_wars` — retirer :
+`fivecade_removestatic fivecade_street_wars <numéro>`. Commandes réservées
+aux admins (ACE `command.fivecade_registerstatic`, etc., voir
+`fivecade_staticbornes/server.lua`).
 
 Degenatron et Penetrator partagent exactement le même jeu/logique —
 seule la direction artistique (visuel du menu, sprites d'ennemis,
