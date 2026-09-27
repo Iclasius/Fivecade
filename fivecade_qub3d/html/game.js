@@ -764,7 +764,7 @@ MenuScene.prototype.create = function () {
    * centree, pas de titre texte separe qui ferait doublon. */
   this.add.image(GAME_WIDTH / 2, 0, 'menu-face').setOrigin(0.5, 0).setScale(0.34);
 
-  var items = ['NOUVELLE PARTIE', 'MEILLEURS SCORES', 'QUITTER'];
+  var items = ['NOUVELLE PARTIE', 'MEILLEURS SCORES', 'VOLUME', 'QUITTER'];
   var self = this;
   this.menuTexts = [];
   this.selectedIndex = 0;
@@ -860,6 +860,9 @@ MenuScene.prototype.activateItem = function (i) {
   } else if (i === 1) {
     this.openScores();
   } else if (i === 2) {
+    // reglage du volume (volume.js, regle commune a toutes les bornes)
+    if (window.FiveCadeVolume) { window.FiveCadeVolume.open(); }
+  } else if (i === 3) {
     if (window.FiveCadeBridge) { window.FiveCadeBridge.quit(); }
   }
 };
@@ -903,8 +906,9 @@ MenuScene.prototype.onMenuKey = function (key) {
     else if (['Enter', ' ', 'Backspace', 'ArrowLeft', 'ArrowRight'].indexOf(key) >= 0) { this.closeScores(); }
     return;
   }
-  if (key === 'ArrowUp') { this.setSelected((this.selectedIndex + 2) % 3); }
-  else if (key === 'ArrowDown') { this.setSelected((this.selectedIndex + 1) % 3); }
+  var n = this.menuTexts.length;
+  if (key === 'ArrowUp') { this.setSelected((this.selectedIndex + n - 1) % n); }
+  else if (key === 'ArrowDown') { this.setSelected((this.selectedIndex + 1) % n); }
   else if (key === 'Enter') { this.activateItem(this.selectedIndex); }
 };
 
@@ -1674,6 +1678,13 @@ GameOverScene.prototype.update = function (time, delta) {
     backgroundColor: '#05060f',
     scene: [BootScene, MenuScene, MainScene, GameOverScene]
   });
+
+  /* Volume general regle par le joueur (volume.js, regle commune a toutes
+   * les bornes) : multiplie tous les sons Phaser (musiques + bruitages). */
+  if (window.FiveCadeVolume) {
+    game.sound.volume = window.FiveCadeVolume.factor();
+    window.FiveCadeVolume.onChange(function (f) { game.sound.volume = f; });
+  }
   window.__PHASER_GAME__ = game;
 
   var menuSceneRef = null;
@@ -1690,6 +1701,7 @@ GameOverScene.prototype.update = function (time, delta) {
     },
     onClose: function () {
       window.__fivecadeBorneOpenRequested = false;
+      if (window.FiveCadeVolume) window.FiveCadeVolume.close();
       if (menuSceneRef && menuSceneRef.scoresPanel) {
         menuSceneRef.closeScores();
       }

@@ -2,7 +2,7 @@
 <html lang="fr">
 <head>
 <meta charset="utf-8">
-<title>Qub3d</title>
+<title>Space Monkey 3</title>
 <style>
   html, body {
     margin: 0;
@@ -22,37 +22,24 @@
   #app.visible {
     display: block;
   }
-  /* Cadre "borne" reel (bezel.png) - CONTRAIREMENT a
-     fivecade_degenatron_penetrator/html/index.html (etire jusqu'aux bords,
-     ratio bezel proche du 4:3/ecran donc peu visible), le bezel de Qub3d
-     est un PNG PORTRAIT (1122x1402, ratio ~0.80) alors qu'un ecran FiveM
-     reel est quasi toujours en LARGESCREEN (~1.78 pour du 16:9) - un simple
-     "100% 100%" etire la largeur et la hauteur par des facteurs totalement
-     differents, ce qui deforme le cadre ET la zone de jeu de façon
-     disproportionnee (mesure : sur 1920x1080, la zone de jeu prevue a un
-     ratio de 0.75 s'affichait en fait a 1.67, quasiment inversee - retour
-     utilisateur "ecrase"). Fix : #cabinet est desormais redimensionne en
-     JS (sizeCabinetToBezelAspect, voir le script principal plus bas) pour
-     TOUJOURS garder le ratio natif du PNG (letterbox noir sur les cotes/
-     haut-bas selon l'ecran, jamais de deformation) - #screen-wrap peut
-     alors rester en % simples relatifs a #cabinet, qui a maintenant
-     toujours le meme ratio que l'image source, sur n'importe quel ecran.
-     Decoupe transparente mesuree au pixel pres (Pillow, bbox alpha) :
-     native 128,136 -> 991,1108 dans l'image 1122x1402 (ratio ~0.888).
-     Largeur resserree pour matcher exactement le ratio du jeu (0.75,
-     GAME_WIDTH/GAME_HEIGHT) : 729/972px sur 863/972px de decoupe
-     disponible, centree horizontalement. */
+  /* Cadre de borne fourni par l'utilisateur (bezel.jpg, 1748x900, marque
+     Pixtro) etire jusqu'aux bords de l'ecran, meme principe que les autres
+     bornes. Decoupe de l'ecran mesuree dans l'image : 251,102 -> 1498,687
+     (1248x586), coins arrondis ~48 px -> positions en % pour rester calee
+     quelle que soit la resolution. La largeur du jeu (game.js, GAME_WIDTH)
+     est calculee sur ces memes pourcentages : pas de bandes noires. */
   #cabinet {
     position: fixed;
-    background: #000 url('bezel.png') no-repeat center / 100% 100%;
+    inset: 0;
+    background: #000 url('bezel.jpg') no-repeat center / 100% 100%;
   }
   #screen-wrap {
     position: absolute;
-    left: 17.38%;
-    top: 9.70%;
-    width: 64.97%;
-    height: 69.33%;
-    border-radius: 2.5%;
+    left: 14.36%;
+    top: 11.33%;
+    width: 71.40%;
+    height: 65.11%;
+    border-radius: 3.85% / 8.19%;
     overflow: hidden;
     background: #000;
   }
@@ -60,37 +47,34 @@
     width: 100%;
     height: 100%;
   }
+  /* object-fit: contain garde les proportions 16:9 du jeu. */
   #game-container canvas {
     display: block;
     width: 100% !important;
     height: 100% !important;
+    object-fit: contain;
   }
-  /* Plateau/pieces en vrai 3D (Three.js), superpose au canvas Phaser qui
-     ne garde que le HUD/menu (voir ThreeBoard dans game.js) - fond
-     transparent, ne bloque pas les clics/touches (pointer-events none). */
-  #three-canvas {
-    position: absolute;
-    inset: 0;
-    width: 100%;
-    height: 100%;
-    z-index: 1;
-    pointer-events: none;
+  /* Voir updateCanvasSmoothing() : lissage quand l'affichage REDUIT le jeu. */
+  #game-container canvas.smooth {
+    image-rendering: auto !important;
   }
+  /* Sur le cadre, juste au-dessus de l'ecran (le bas de l'ecran porte deja
+     la ligne des controles du jeu). */
   #hint {
     position: absolute;
     left: 0;
     right: 0;
-    bottom: 6px;
+    top: 6.2%;
     text-align: center;
-    color: #b9f3ff;
-    font-size: 11px;
-    text-shadow: 0 0 4px #000;
+    color: #fff3c4;
+    font: bold 1.5vh "Courier New", monospace;
+    text-shadow: 0 0 4px #000, 0 0 2px #000;
     pointer-events: none;
-    opacity: 0.85;
     z-index: 2;
   }
   /* Journal d'erreurs visible directement a l'ecran - le F8 de FiveM
-     n'affiche pas la console JS de la page NUI. */
+     n'affiche pas la console JS de la page NUI, donc c'est le seul
+     moyen fiable de voir une erreur JS sans devtools externes. */
   #debug-log {
     display: none;
     position: absolute;
@@ -113,8 +97,8 @@
   #debug-log.visible {
     display: block;
   }
-  /* Saisie du nom - affichee seulement quand le score entre dans le top 10
-     de cette borne (decide cote game.js), pas a chaque partie. */
+  /* Saisie du nom pour le classement en fin de partie - libre plutot
+     que force au nom du personnage FiveM. */
   #name-entry {
     display: none;
     position: absolute;
@@ -129,14 +113,14 @@
   }
   #name-entry-box {
     background: #05070f;
-    border: 2px solid #3ad6ff;
+    border: 2px solid #ffd63a;
     border-radius: 8px;
     padding: 24px 32px;
     text-align: center;
     font-family: "Courier New", monospace;
   }
   #name-entry-label {
-    color: #3ad6ff;
+    color: #ffd63a;
     font-size: 13px;
     letter-spacing: 0.05em;
     margin-bottom: 12px;
@@ -144,8 +128,8 @@
   #name-entry-input {
     display: block;
     width: 220px;
-    background: #10142a;
-    border: 2px solid #9be7ff;
+    background: #1c0f33;
+    border: 2px solid #ffe98a;
     border-radius: 4px;
     color: #ffffff;
     font-family: "Courier New", monospace;
@@ -157,24 +141,22 @@
     outline: none;
   }
   #name-entry-hint {
-    color: #9be7ff;
+    color: #ffe98a;
     font-size: 10px;
     opacity: 0.85;
   }
-  #fc-volume { --fc-accent: #39e5ff; }
 </style>
 </head>
 <body>
   <div id="app">
     <div id="cabinet">
+      <div id="hint">ECHAP pour quitter</div>
       <div id="screen-wrap">
         <div id="game-container"></div>
-        <canvas id="three-canvas"></canvas>
-        <div id="hint">ECHAP pour quitter</div>
         <pre id="debug-log"></pre>
         <div id="name-entry">
           <div id="name-entry-box">
-            <div id="name-entry-label">NOUVEAU RECORD - TON NOM</div>
+            <div id="name-entry-label">TON NOM POUR LE CLASSEMENT</div>
             <input id="name-entry-input" maxlength="16" autocomplete="off" spellcheck="false" />
             <div id="name-entry-hint">ENTREE pour valider</div>
           </div>
@@ -183,7 +165,6 @@
     </div>
   </div>
 
-<script src="three.min.js"></script>
 <script src="phaser.min.js"></script>
 <script>
 (function () {
@@ -191,7 +172,7 @@
 
   var RESOURCE_NAME = (typeof GetParentResourceName === "function")
     ? GetParentResourceName()
-    : "fivecade_qub3d";
+    : "fivecade_space_monkey";
 
   function nuiPost(name, data) {
     return fetch("https://" + RESOURCE_NAME + "/" + name, {
@@ -203,33 +184,6 @@
 
   var appEl = document.getElementById("app");
   var debugLogEl = document.getElementById("debug-log");
-  var cabinetEl = document.getElementById("cabinet");
-
-  /* Garde le cadre (bezel.png, PNG portrait 1122x1402) a son ratio natif
-   * quelle que soit la taille/le ratio de l'ecran reel - voir le
-   * commentaire CSS de #cabinet pour le pourquoi (un simple CSS
-   * "100% 100%" deformait fortement le cadre ET la zone de jeu sur un
-   * ecran large). Centre le cadre dans le noir de #app, letterbox sur les
-   * cotes ou en haut/bas selon que l'ecran est plus large ou plus etroit
-   * que le bezel. */
-  var BEZEL_ASPECT = 1122 / 1402;
-  function sizeCabinetToBezelAspect() {
-    var vw = window.innerWidth, vh = window.innerHeight;
-    var w, h;
-    if (vw / vh > BEZEL_ASPECT) {
-      h = vh;
-      w = h * BEZEL_ASPECT;
-    } else {
-      w = vw;
-      h = w / BEZEL_ASPECT;
-    }
-    cabinetEl.style.width = w + "px";
-    cabinetEl.style.height = h + "px";
-    cabinetEl.style.left = ((vw - w) / 2) + "px";
-    cabinetEl.style.top = ((vh - h) / 2) + "px";
-  }
-  sizeCabinetToBezelAspect();
-  window.addEventListener("resize", sizeCabinetToBezelAspect);
 
   function debugLog(text) {
     debugLogEl.classList.add("visible");
@@ -242,6 +196,7 @@
   });
 
   var currentPlayerName = "???";
+  var currentBorneType = "spacemonkey";
 
   /* Auto-ouverture pour capture d'ecran/preview hors FiveM uniquement
    * (?autoopen=1) - sans effet en jeu, l'URL NUI reelle n'a jamais ce
@@ -253,15 +208,35 @@
     });
   }
 
+  /* Nettete du pixel art selon l'echelle d'affichage : le jeu est dessine
+     en 720px de haut, mais en 1920x1080 la decoupe du cadre n'en fait que
+     ~671 (echelle 0.93). En mode "pixelated", une reduction non entiere
+     SUPPRIME des lignes de pixels (1 sur 14 environ : contours hachures) ;
+     en dessous de 1 on passe donc en lissage (reduction propre, a peine
+     plus douce), et on garde "pixelated" des que l'echelle est >= 1. */
+  function updateCanvasSmoothing() {
+    var wrap = document.getElementById("screen-wrap");
+    var canvas = document.querySelector("#game-container canvas");
+    if (!wrap || !canvas || !canvas.height) return;
+    var scale = Math.min(wrap.clientWidth / canvas.width, wrap.clientHeight / canvas.height);
+    canvas.classList.toggle("smooth", scale < 1);
+  }
+  window.addEventListener("resize", updateCanvasSmoothing);
+
   function openApp() {
     appEl.classList.add("visible");
     if (window.FiveCadeGame) {
-      window.FiveCadeGame.onOpen(currentPlayerName);
+      window.FiveCadeGame.onOpen(currentPlayerName, currentBorneType);
     }
+    updateCanvasSmoothing();
+    setTimeout(updateCanvasSmoothing, 300); // le canvas Phaser peut ne pas exister encore
   }
 
   function closeApp() {
     appEl.classList.remove("visible");
+    /* Coupe la saisie du nom si elle etait en cours (Echap pendant le
+     * game over) - sans ca l'ecran de saisie restait "arme" et pouvait
+     * ressurgir par-dessus le menu a la prochaine ouverture. */
     if (window.FiveCadeBridge) {
       window.FiveCadeBridge.cancelNamePrompt();
     }
@@ -277,6 +252,7 @@
     }
     if (msg.type === "fivecade_open") {
       currentPlayerName = msg.playerName || "???";
+      currentBorneType = msg.borneType || "spacemonkey";
       openApp();
     } else if (msg.type === "fivecade_close") {
       closeApp();
@@ -290,7 +266,9 @@
   document.addEventListener("keydown", function (event) {
     if (event.key === "Escape" && appEl.classList.contains("visible")) {
       event.preventDefault();
-      if (window.FiveCadeGame && window.FiveCadeGame.consumeEscape && window.FiveCadeGame.consumeEscape()) return; // panneau scores d'abord
+      // Echap referme d'abord un panneau ouvert (meilleurs scores) avant
+      // de quitter la borne.
+      if (window.FiveCadeGame && window.FiveCadeGame.consumeEscape && window.FiveCadeGame.consumeEscape()) return;
       nuiPost("fivecade_close");
       closeApp();
     }
@@ -298,6 +276,9 @@
 
   var nameEntryEl = document.getElementById("name-entry");
   var nameEntryInput = document.getElementById("name-entry-input");
+  /* Reference vers le listener keydown actif de promptName (s'il y en a
+   * un) - necessaire pour pouvoir le retirer proprement si la borne est
+   * fermee (Echap) pendant la saisie du nom, voir cancelNamePrompt. */
   var activeNameKeydownHandler = null;
 
   /* Pont utilise par game.js pour parler a FiveM - independant de Phaser. */
@@ -308,8 +289,6 @@
     submitScore: function (score, name) {
       nuiPost("fivecade_submitScore", { playerName: (name || currentPlayerName), score: score });
     },
-    /* N'est appele par game.js que lorsque le score entre reellement dans
-     * le top 10 de cette borne - champ vide, aucune trace du nom FiveM. */
     promptName: function (callback) {
       nameEntryInput.value = "";
       nameEntryInput.placeholder = "ANONYME";
@@ -350,6 +329,7 @@
 })();
 </script>
 <script src="volume.js"></script>
+<script src="audio.js"></script>
 <script src="game.js"></script>
 </body>
 </html>

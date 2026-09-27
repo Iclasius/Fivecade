@@ -8,8 +8,15 @@
 (function () {
   'use strict';
 
-  var ctx = null, master = null, muted = false;
-  var MUSIC_VOL = 0.32;
+  var ctx = null, master = null;
+  var MUSIC_VOL = 0.32, MASTER_VOL = 0.55;
+  // Volume general regle par le joueur (volume.js, regle commune a toutes
+  // les bornes) : remplace l'ancien simple "muet".
+  function vf() { return window.FiveCadeVolume ? window.FiveCadeVolume.factor() : 1; }
+  function applyVolume() {
+    if (master) master.gain.value = MASTER_VOL * vf();
+    if (music.el) music.el.volume = MUSIC_VOL * vf();
+  }
   var music = { name: null, el: null };
   var lastPlay = {};
 
@@ -19,7 +26,7 @@
       if (!AC) return null;
       ctx = new AC();
       master = ctx.createGain();
-      master.gain.value = muted ? 0 : 0.55;
+      master.gain.value = MASTER_VOL * vf();
       // filtre general : coupe le haut du spectre (confort d'ecoute)
       var lp = ctx.createBiquadFilter();
       lp.type = 'lowpass'; lp.frequency.value = 7000;
@@ -110,7 +117,7 @@
     stopMusic();
     var el = new Audio('music/' + name + '.ogg');
     el.loop = true;
-    el.volume = muted ? 0 : MUSIC_VOL;
+    el.volume = MUSIC_VOL * vf();
     var p = el.play();
     if (p && p.catch) p.catch(function () { /* lecture bloquee avant un geste du joueur */ });
     music = { name: name, el: el };
@@ -121,17 +128,15 @@
     music = { name: null, el: null };
   }
 
+  if (window.FiveCadeVolume) window.FiveCadeVolume.onChange(applyVolume);
+
   window.SWSound = {
-    sfx: function (name) { if (muted || !SFX[name]) return; try { SFX[name](); } catch (e) { /* audio indisponible */ } },
+    sfx: function (name) { if (vf() === 0 || !SFX[name]) return; try { SFX[name](); } catch (e) { /* audio indisponible */ } },
     music: playMusic,
     stopMusic: stopMusic,
     unlock: function () { ac(); if (music.el && music.el.paused) { var p = music.el.play(); if (p && p.catch) p.catch(function () {}); } },
-    toggleMute: function () {
-      muted = !muted;
-      if (master) master.gain.value = muted ? 0 : 0.55;
-      if (music.el) music.el.volume = muted ? 0 : MUSIC_VOL;
-      return muted;
-    },
-    isMuted: function () { return muted; }
+    // touche M : meme reglage que le panneau VOLUME de l'accueil
+    toggleMute: function () { return window.FiveCadeVolume ? window.FiveCadeVolume.toggleMute() : false; },
+    isMuted: function () { return vf() === 0; }
   };
 })();

@@ -18,6 +18,7 @@ files {
     'html/index.html',
     'html/phaser.min.js',
     'html/game.js',
+    'html/volume.js',
     'html/bezel.png',
     'html/bezel-penetrator.png',
     'html/menu-face.png',

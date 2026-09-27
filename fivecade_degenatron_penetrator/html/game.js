@@ -154,6 +154,8 @@ function playGameOverJingle() {
     if (ctx.state === 'suspended') {
       ctx.resume();
     }
+    var vol = window.FiveCadeVolume ? window.FiveCadeVolume.factor() : 1;
+    if (vol <= 0) { return; }
     var notes = [392.00, 329.63, 261.63, 196.00]; // Sol4, Mi4, Do4, Sol3
     var noteDur = 0.16;
     var gap = 0.14;
@@ -164,7 +166,7 @@ function playGameOverJingle() {
       osc.type = 'square';
       osc.frequency.setValueAtTime(freq, t0);
       gain.gain.setValueAtTime(0.0001, t0);
-      gain.gain.exponentialRampToValueAtTime(0.22, t0 + 0.01);
+      gain.gain.exponentialRampToValueAtTime(0.22 * vol, t0 + 0.01);
       gain.gain.exponentialRampToValueAtTime(0.0001, t0 + noteDur);
       osc.connect(gain);
       gain.connect(ctx.destination);
@@ -354,7 +356,7 @@ class MenuScene extends Phaser.Scene {
     this.faceImage = this.add.image(GAME_WIDTH / 2, 20, faceKey).setOrigin(0.5, 0);
     this.faceImage.setScale(faceTargetHeight / this.faceImage.height);
 
-    this.items = ['NOUVELLE PARTIE', 'MEILLEURS SCORES', 'QUITTER'];
+    this.items = ['NOUVELLE PARTIE', 'MEILLEURS SCORES', 'VOLUME', 'QUITTER'];
     this.selected = 0;
     this.texts = [];
     var self = this;
@@ -435,6 +437,9 @@ class MenuScene extends Phaser.Scene {
     } else if (i === 1) {
       this.openScores();
     } else if (i === 2) {
+      // reglage du volume (volume.js, regle commune a toutes les bornes)
+      if (window.FiveCadeVolume) window.FiveCadeVolume.open();
+    } else if (i === 3) {
       window.FiveCadeBridge.quit();
     }
   }
@@ -1474,6 +1479,13 @@ class GameOverScene extends Phaser.Scene {
     },
     scene: [BootScene, MenuScene, MainScene, GameOverScene]
   });
+
+  /* Volume general regle par le joueur (volume.js, regle commune a toutes
+   * les bornes) : multiplie tous les sons Phaser (musiques + bruitages). */
+  if (window.FiveCadeVolume) {
+    game.sound.volume = window.FiveCadeVolume.factor();
+    window.FiveCadeVolume.onChange(function (f) { game.sound.volume = f; });
+  }
   window.__PHASER_GAME__ = game;
 
   var menuSceneRef = null;
@@ -1521,6 +1533,7 @@ class GameOverScene extends Phaser.Scene {
      * index.html). */
     onClose: function () {
       window.__fivecadeBorneOpenRequested = false;
+      if (window.FiveCadeVolume) window.FiveCadeVolume.close();
       if (menuSceneRef && menuSceneRef.scoresPanel) {
         menuSceneRef.closeScores();
       }

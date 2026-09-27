@@ -28,6 +28,7 @@ files {
     'html/phaser.min.js',
     'html/sim.js',
     'html/game.js',
+    'html/volume.js',
     'html/audio.js',
     'html/music/menu.ogg',
     'html/music/game.ogg',

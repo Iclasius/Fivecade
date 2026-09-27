@@ -100,6 +100,32 @@ Commandes de placement dans [`COMMANDS.md`](./COMMANDS.md).
 - Les portraits (`html/portraits.webp`) ne sont pas publiés : les ajouter
   localement.
 
+### Space Monkey 3: Bananas Gone Bad — `fivecade_space_monkey`
+
+Runner d'esquive à score infini façon Flappy Bird, sur la cabine Pixtro
+`ch_prop_arcade_space_01a`. Une seule touche (ESPACE / HAUT) propulse le
+singe dans sa barque à roquettes : il ne se déplace que verticalement.
+
+- Bananes : normale (+1), dorée (+10, collée aux astéroïdes), pourrie
+  (−5, casse le combo). 5 bananes d'affilée = multiplicateur (jusqu'à x5).
+- 5 zones de plus en plus rapides (la difficulté suit la distance) :
+  murs d'astéroïdes fixes, puis mobiles, en rotation, et gros astéroïdes
+  qui se fissurent puis éclatent.
+- Bonus bouclier et nuke. Le Dr Dank passe de temps en temps : les murs
+  s'arrêtent, sa soucoupe (champ de force qui pulvérise les astéroïdes)
+  lâche des bananes pourries calculées pour être toujours esquivables en
+  montant ou en descendant.
+- Sprites PixelLab, cadre et écran d'accueil fournis, musiques « jungle
+  spatiale » générées par `tools/space_monkey_music.py`.
+
+### Réglage du volume (toutes les bornes)
+
+Chaque borne propose une entrée **VOLUME** sur sa page d'accueil : barre
+de 10 crans (flèches ou souris), **M** / **ENTRÉE** pour couper, **ÉCHAP**
+pour revenir au menu. Le réglage est mémorisé par borne et s'applique à
+la musique comme aux bruitages. Module commun `html/volume.js`, identique
+dans chaque ressource.
+
 ### Bornes natives — `fivecade_staticbornes`
 
 Permet d'enregistrer des bornes déjà présentes dans une map/MLO (sans
@@ -130,14 +156,18 @@ dependency 'fivecade_highscore'  -- déjà déclaré dans chaque borne
    ensure fivecade_degenatron_penetrator
    ensure fivecade_qub3d
    ensure fivecade_invade_persuade
+   ensure fivecade_street_wars
+   ensure fivecade_space_monkey
    ```
 3. Placer les props en jeu — voir [`COMMANDS.md`](./COMMANDS.md).
 
 ## Licence des composants tiers
 
 `fivecade_degenatron_penetrator/html/phaser.min.js`,
-`fivecade_qub3d/html/phaser.min.js` et
-`fivecade_invade_persuade/html/phaser.min.js` embarquent [Phaser](https://phaser.io/)
+`fivecade_qub3d/html/phaser.min.js`,
+`fivecade_invade_persuade/html/phaser.min.js`,
+`fivecade_street_wars/html/phaser.min.js` et
+`fivecade_space_monkey/html/phaser.min.js` embarquent [Phaser](https://phaser.io/)
 (licence MIT). `fivecade_qub3d/html/three.min.js` embarque
 [Three.js](https://threejs.org/) (licence MIT). Le reste du code
 (Lua + JS du jeu) et les assets (sprites, musiques) sont propres à ce

@@ -906,10 +906,10 @@ class MenuScene extends Phaser.Scene {
     this.add.rectangle(GAME_WIDTH / 2, GAME_HEIGHT - 48, GAME_WIDTH, 96, 0x0a0404, 0.82);
     this.add.rectangle(GAME_WIDTH / 2, GAME_HEIGHT - 96, GAME_WIDTH, 3, 0xffcc4d, 0.9);
 
-    var items = ['NOUVELLE PARTIE', 'MEILLEURS SCORES', 'QUITTER'];
+    var items = ['NOUVELLE PARTIE', 'MEILLEURS SCORES', 'VOLUME', 'QUITTER'];
     var self = this;
     this.itemTexts = items.map(function (label, i) {
-      var t = self.add.text(GAME_WIDTH / 2 + (i - 1) * 360, rowY, label, {
+      var t = self.add.text(GAME_WIDTH / 2 + (i - 1.5) * 300, rowY, label, {
         fontFamily: 'monospace', fontSize: '24px', color: '#ffffff', fontStyle: 'bold',
         stroke: '#1a0804', strokeThickness: 5
       }).setOrigin(0.5).setInteractive({ useHandCursor: true });
@@ -963,6 +963,9 @@ class MenuScene extends Phaser.Scene {
       this.scene.start('MainScene');
     } else if (i === 1) {
       this.toggleScores();
+    } else if (i === 2) {
+      // reglage du volume (volume.js, regle commune a toutes les bornes)
+      if (window.FiveCadeVolume) window.FiveCadeVolume.open();
     } else {
       safeCall(function () { window.FiveCadeBridge.quit(); });
     }
@@ -3696,6 +3699,7 @@ class GameOverScene extends Phaser.Scene {
     },
     onClose: function () {
       window.__fivecadeBorneOpenRequested = false;
+      if (window.FiveCadeVolume) window.FiveCadeVolume.close();
       if (menuSceneRef && menuSceneRef.scoresPanel) {
         menuSceneRef.closeScores();
       }

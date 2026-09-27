@@ -19,6 +19,7 @@ files {
     'html/three.min.js',
     'html/phaser.min.js',
     'html/game.js',
+    'html/volume.js',
     'html/menu-face.png',
     'html/bezel.png',
     'html/audio/gameplay-theme.mp3',

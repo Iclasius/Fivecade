@@ -19,6 +19,7 @@ files {
     'html/bezel.png',
     'html/phaser.min.js',
     'html/game.js',
+    'html/volume.js',
     'html/audio.js',
     'html/music/*.ogg',
     'html/music/*.mp3',

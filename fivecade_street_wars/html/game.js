@@ -316,9 +316,10 @@
       drawBackdrop(this, 0.18);
       music('menu');
       drawLogo(this, GAME_W / 2, 230, 1.15);
-      this.menu = makeMenu(this, ['JOUER EN LIGNE', 'CONTRE LE CPU', 'QUITTER'], 470, 62, function (i) {
+      this.menu = makeMenu(this, ['JOUER EN LIGNE', 'CONTRE LE CPU', 'VOLUME', 'QUITTER'], 450, 54, function (i) {
         if (i === 0) self.scene.start('OnlineScene');
         else if (i === 1) self.scene.start('RoomScene', { mode: 'solo' });
+        else if (i === 2) { if (window.FiveCadeVolume) window.FiveCadeVolume.open(); } // volume.js, regle commune
         else window.FiveCadeBridge.quit();
       });
       drawHelp(this, 'HAUT / BAS  choisir      ENTR\u00c9E  valider      M  couper le son      \u00c9CHAP  quitter la borne');
@@ -1263,6 +1264,7 @@
       whenReady(function () { game.scene.start('MenuScene'); });
     },
     onClose: function () {
+      if (window.FiveCadeVolume) window.FiveCadeVolume.close();
       pendingStart = null;
       music(null);
       stopAll();

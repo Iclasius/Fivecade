@@ -27,6 +27,7 @@ ci-dessous se tapent dans le chat/console **en jeu**.
 - `ch_prop_arcade_penetrator_01a` — borne 2, Penetrator (même resource/config que ci-dessus)
 - `sum_prop_arcade_qub3d_01a` — borne 3, Qub3d (voir `fivecade_qub3d/client/config.lua`)
 - `ch_prop_arcade_invade_01a` — Invade and Persuade (voir `fivecade_invade_persuade/client/config.lua`)
+- `ch_prop_arcade_space_01a` — Space Monkey 3: Bananas Gone Bad (voir `fivecade_space_monkey/client/config.lua`)
 - `vw_prop_vw_arcade_02a` / `02b` / `02c` / `02d` — Street Wars, Gang Wars Edition (voir ci-dessous)
 
 ## Street Wars, Gang Wars Edition : les 4 bornes

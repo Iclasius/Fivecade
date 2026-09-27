@@ -20,8 +20,10 @@
 
   var ctx = null, master = null, sfxBus = null, musicBus = null;
   var noiseBuf = null, pulseWave = null;
-  var muted = false;
-  try { muted = localStorage.getItem('fivecade_invade_muted') === '1'; } catch (e) { /* ignore */ }
+  // Volume general regle par le joueur (volume.js, regle commune a toutes
+  // les bornes) : remplace l'ancien simple "muet". Musiques et bruitages
+  // passent tous par le bus master.
+  function vf() { return window.FiveCadeVolume ? window.FiveCadeVolume.factor() : 1; }
 
   var MASTER_VOL = 0.65, SFX_VOL = 0.9, MUSIC_VOL = 0.42;
   // Musique chiptune de secours desactivee : juge desagreable a l'ecoute
@@ -39,7 +41,7 @@
     comp.threshold.value = -14; comp.knee.value = 12; comp.ratio.value = 6;
     comp.attack.value = 0.003; comp.release.value = 0.15;
     comp.connect(ctx.destination);
-    master = ctx.createGain(); master.gain.value = muted ? 0 : MASTER_VOL; master.connect(comp);
+    master = ctx.createGain(); master.gain.value = MASTER_VOL * vf(); master.connect(comp);
     var soften = ctx.createBiquadFilter(); // retire les aigus stridents des ondes carrees
     soften.type = 'lowpass'; soften.frequency.value = 3200; soften.Q.value = 0.5;
     soften.connect(master);
@@ -326,7 +328,7 @@
   var lastPlayed = {};
 
   function play(name, opts) {
-    if (muted || !SFX[name]) return;
+    if (vf() === 0 || !SFX[name]) return;
     if (!ensureCtx() || ctx.state !== 'running') return;
     var t = now();
     if (MIN_GAP[name] && lastPlayed[name] && t - lastPlayed[name] < MIN_GAP[name]) return;
@@ -521,14 +523,20 @@
     fadeOutCurrent();
   }
 
+  function applyVolume() {
+    if (master) master.gain.setTargetAtTime(MASTER_VOL * vf(), now(), 0.02);
+  }
+  if (window.FiveCadeVolume) window.FiveCadeVolume.onChange(applyVolume);
+
   function setMuted(m) {
-    muted = m;
-    try { localStorage.setItem('fivecade_invade_muted', m ? '1' : '0'); } catch (e) { /* ignore */ }
-    if (master) master.gain.setTargetAtTime(m ? 0 : MASTER_VOL, now(), 0.02);
+    if (window.FiveCadeVolume && (vf() === 0) !== !!m) window.FiveCadeVolume.toggleMute();
   }
 
+  // Touche M : meme reglage que le panneau VOLUME de l'accueil
   window.addEventListener('keydown', function (e) {
-    if ((e.key === 'm' || e.key === 'M') && !(e.target && e.target.tagName === 'INPUT')) setMuted(!muted);
+    if ((e.key === 'm' || e.key === 'M') && !(e.target && e.target.tagName === 'INPUT') && window.FiveCadeVolume) {
+      window.FiveCadeVolume.toggleMute();
+    }
   });
 
   window.FiveCadeSound = {
@@ -536,7 +544,7 @@
     startMusic: startMusic,
     stopMusic: stopMusic,
     setMuted: setMuted,
-    isMuted: function () { return muted; },
+    isMuted: function () { return vf() === 0; },
     resume: resume,
     suspend: function () { stopMusic(); if (ctx && ctx.state === 'running') ctx.suspend(); },
     // Diagnostic (tests en navigateur) : etat du contexte et de la musique.
