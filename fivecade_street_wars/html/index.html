@@ -22,22 +22,19 @@
   #app.visible {
     display: block;
   }
-  /* Cadre de la borne (bezel_<couleur>.webp, 1536x1024 = 3:2) : chaque
-     variante de prop a sa couleur. Le cadre est garde a ses proportions
-     (pas etire) et pose PAR-DESSUS l'ecran : sa decoupe transparente
-     masque proprement les coins arrondis de l'ecran. */
+  /* Cadre de la borne (bezel_<couleur>.webp, 1536x1024) : chaque variante
+     de prop a sa couleur. Pose PAR-DESSUS l'ecran (sa decoupe transparente
+     masque proprement les coins de l'ecran). ECRAN STANDARD FIVECADE (regle
+     commune a toutes les bornes) : l'ecran a la meme taille et la meme
+     place que celui de Defender of the Faith ; le cadre est agrandi/decale
+     par applyBezel() pour que sa decoupe tombe dessus (bords rognes). */
   #cabinet {
-    position: absolute;
+    position: fixed;
     inset: 0;
-    margin: auto;
-    width: min(100vw, calc(100vh * 3 / 2));
-    height: min(100vh, calc(100vw * 2 / 3));
+    overflow: hidden;
   }
   #bezel {
     position: absolute;
-    inset: 0;
-    width: 100%;
-    height: 100%;
     pointer-events: none;
     z-index: 2;
   }
@@ -191,15 +188,29 @@
     blue:   [178, 116, 1361, 766]
   };
   var BLEED = 12; // debord (px source) cache sous le cadre
+  // Ecran standard FiveCade (% de l'ecran) : gauche, haut, largeur, hauteur
+  var STD = [7.32, 10.31, 85.77, 77.72];
 
   function applyBezel(color) {
     if (!BEZEL_SCREEN[color]) color = "green";
     var r = BEZEL_SCREEN[color], wrap = document.getElementById("screen-wrap");
-    document.getElementById("bezel").src = "bezel_" + color + ".webp";
-    wrap.style.left = ((r[0] - BLEED) / BEZEL_W * 100) + "%";
-    wrap.style.top = ((r[1] - BLEED) / BEZEL_H * 100) + "%";
-    wrap.style.width = ((r[2] - r[0] + 1 + 2 * BLEED) / BEZEL_W * 100) + "%";
-    wrap.style.height = ((r[3] - r[1] + 1 + 2 * BLEED) / BEZEL_H * 100) + "%";
+    var bezel = document.getElementById("bezel");
+    bezel.src = "bezel_" + color + ".webp";
+    // decoupe du cadre en fractions de l'image
+    var hx = r[0] / BEZEL_W, hy = r[1] / BEZEL_H;
+    var hw = (r[2] - r[0] + 1) / BEZEL_W, hh = (r[3] - r[1] + 1) / BEZEL_H;
+    // taille/position du cadre pour que cette decoupe = l'ecran standard
+    var bw = STD[2] / hw, bh = STD[3] / hh;
+    bezel.style.width = bw + "vw";
+    bezel.style.height = bh + "vh";
+    bezel.style.left = (STD[0] - hx * bw) + "vw";
+    bezel.style.top = (STD[1] - hy * bh) + "vh";
+    // ecran = zone standard + leger debord cache sous le cadre
+    var bx = BLEED / BEZEL_W * bw, by = BLEED / BEZEL_H * bh;
+    wrap.style.left = (STD[0] - bx) + "vw";
+    wrap.style.top = (STD[1] - by) + "vh";
+    wrap.style.width = (STD[2] + 2 * bx) + "vw";
+    wrap.style.height = (STD[3] + 2 * by) + "vh";
   }
   applyBezel("green");
 

@@ -26,7 +26,7 @@
 var GAME_HEIGHT = 720;
 var GAME_WIDTH = (function () {
   try {
-    var ratio = (window.innerWidth * 0.7714) / (window.innerHeight * 0.6215);
+    var ratio = (window.innerWidth * 0.8577) / (window.innerHeight * 0.7772); // ecran standard FiveCade
     if (!isFinite(ratio) || ratio <= 0) return 1280;
     return Math.round(Phaser.Math.Clamp(GAME_HEIGHT * ratio, 1280, 1920) / 2) * 2;
   } catch (e) {

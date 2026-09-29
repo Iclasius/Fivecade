@@ -17,6 +17,7 @@
     display: none;
     position: fixed;
     inset: 0;
+    overflow: hidden; /* le bas du cadre depasse de l'ecran (voir sizeCabinetToBezelAspect) */
     background: rgba(0, 0, 0, 0.97);
   }
   #app.visible {
@@ -213,20 +214,23 @@
    * cotes ou en haut/bas selon que l'ecran est plus large ou plus etroit
    * que le bezel. */
   var BEZEL_ASPECT = 1122 / 1402;
+  /* ECRAN STANDARD FIVECADE (regle commune a toutes les bornes) : l'ecran
+   * de chaque borne a la taille et la place de celui de Defender of the
+   * Faith (haut a 10.31 %, hauteur 77.72 % de l'ecran). EXCEPTION Qub3d
+   * (choix utilisateur 2026-09-29) : son jeu est vertical, il garde donc
+   * un ecran vertical, mais a la MEME HAUTEUR et au meme niveau que
+   * Defender ; seule la largeur differe. Le cadre (ratio natif conserve)
+   * est agrandi en consequence : son bas depasse et est rogne. */
+  var STD_TOP = 0.1031, STD_HEIGHT = 0.7772;       // ecran standard (fraction de la hauteur d'ecran)
+  var WRAP_TOP = 0.0970, WRAP_HEIGHT = 0.6933;     // #screen-wrap dans le cadre (voir CSS)
   function sizeCabinetToBezelAspect() {
     var vw = window.innerWidth, vh = window.innerHeight;
-    var w, h;
-    if (vw / vh > BEZEL_ASPECT) {
-      h = vh;
-      w = h * BEZEL_ASPECT;
-    } else {
-      w = vw;
-      h = w / BEZEL_ASPECT;
-    }
+    var h = vh * STD_HEIGHT / WRAP_HEIGHT;
+    var w = h * BEZEL_ASPECT;
     cabinetEl.style.width = w + "px";
     cabinetEl.style.height = h + "px";
     cabinetEl.style.left = ((vw - w) / 2) + "px";
-    cabinetEl.style.top = ((vh - h) / 2) + "px";
+    cabinetEl.style.top = (vh * STD_TOP - WRAP_TOP * h) + "px";
   }
   sizeCabinetToBezelAspect();
   window.addEventListener("resize", sizeCabinetToBezelAspect);

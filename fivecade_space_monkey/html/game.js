@@ -26,14 +26,14 @@
  * la logique (meme approche que les autres bornes a leurs debuts).
  * ============================================================ */
 
-// Hauteur fixe 720, largeur calculee pour remplir exactement la decoupe du
-// cadre de borne (bezel.jpg etire plein ecran : decoupe = 71.40% x 65.11% de
-// l'ecran, voir index.html) - pas de bandes noires ni de deformation. En
-// 1920x1080 : ~1404 px de large, affiche quasiment a l'echelle 1.
+// Hauteur fixe 720, largeur calculee pour remplir exactement l'ecran
+// standard FiveCade (85.77% x 77.72% de l'ecran, le meme sur toutes les
+// bornes, voir index.html) - pas de bandes noires ni de deformation. En
+// 1920x1080 : ~1412 px de large, affiche a l'echelle ~1.17.
 var GAME_HEIGHT = 720;
 var GAME_WIDTH = (function () {
   try {
-    var ratio = (window.innerWidth * 0.7140) / (window.innerHeight * 0.6511);
+    var ratio = (window.innerWidth * 0.8577) / (window.innerHeight * 0.7772); // ecran standard FiveCade
     if (!isFinite(ratio) || ratio <= 0) return 1400;
     return Math.round(Math.min(Math.max(GAME_HEIGHT * ratio, 1100), 2000) / 2) * 2;
   } catch (e) {

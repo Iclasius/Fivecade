@@ -31,15 +31,21 @@
   #cabinet {
     position: fixed;
     inset: 0;
-    background: #000 url('bezel.jpg') no-repeat center / 100% 100%;
+    background: #000 url('bezel.jpg') no-repeat;
+    /* cadre agrandi/decale pour que sa decoupe (mesuree 251,102 -> 1498,687 sur 1748x900) tombe exactement sur
+       l'ecran standard FiveCade ; ses bords exterieurs sont rognes. */
+    background-size: 120.13vw 119.37vh;
+    background-position: -9.93vw -3.22vh;
   }
   #screen-wrap {
+    /* ECRAN STANDARD FIVECADE (regle commune a toutes les bornes) : meme
+       taille et meme place que l'ecran de Defender of the Faith. */
     position: absolute;
-    left: 14.36%;
-    top: 11.33%;
-    width: 71.40%;
-    height: 65.11%;
-    border-radius: 3.85% / 8.19%;
+    left: 7.32%;
+    top: 10.31%;
+    width: 85.77%;
+    height: 77.72%;
+    border-radius: 2.5%;
     overflow: hidden;
     background: #000;
   }
